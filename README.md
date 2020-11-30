@@ -1,1 +1,1 @@
-# usds-tezos-contracts
+# Tezos USDS
