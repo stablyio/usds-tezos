@@ -1,8 +1,4 @@
-import {
-  TezosToolkit,
-  ContractAbstraction,
-  ContractProvider,
-} from "@taquito/taquito";
+import { ContractAbstraction, ContractProvider } from "@taquito/taquito";
 import { TokenStorage } from "../types";
 import { BigNumber } from "bignumber.js";
 

@@ -8,12 +8,13 @@
   },
   "bugs": "https://github.com/Git-on-my-level/usds-fa2-cli/issues",
   "dependencies": {
+    "@ledgerhq/hw-transport-node-hid": "^5.31.1",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
+    "@taquito/ledger-signer": "^7.0.1-beta.0",
     "@taquito/signer": "^7.0.1-beta.0",
     "@taquito/taquito": "^7.0.1-beta.0",
-    "@types/bignumber.js": "^5.0.0",
     "cli-ux": "^5.5.1",
     "tslib": "^1"
   },
@@ -23,6 +24,8 @@
     "@types/chai": "^4",
     "@types/mocha": "^5",
     "@types/node": "^10",
+    "@types/bignumber.js": "^5.0.0",
+    "@types/ledgerhq__hw-transport-node-hid": "^4.22.2",
     "chai": "^4",
     "eslint": "^5.13",
     "eslint-config-oclif": "^3.1",

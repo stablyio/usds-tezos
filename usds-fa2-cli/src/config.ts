@@ -12,6 +12,7 @@ const config = {
     },
     decimals: 8,
     symbol: "USDS",
+    defaultTokenId: 0,
   },
   explorer: {
     endpoint: {

@@ -1,7 +1,7 @@
 import { flags } from "@oclif/command";
 
 import { SignCommand } from "../../../signCommand";
-import { getAllowance, setAllowance } from "../../../tezos/mint/allowance";
+import { getAllowance, setAllowance } from "../../../tezos/mint";
 import config from "../../../config";
 import cli from "cli-ux";
 import { YES_VALUES } from "../../../constants";
@@ -37,7 +37,7 @@ export default class AllowanceSet extends SignCommand {
         )
       : 0;
 
-    this.log(`You are about to set mint allowance for ${minterAddress}`);
+    this.log(`You are about to set mint allowance for: ${minterAddress}`);
     this.log(`From: ${currentDecimalAllowance}`);
     this.log(`To: ${newDecimalAllowance}`);
     const confirmBroadcast = await cli.prompt("Confirm (Y/N)");

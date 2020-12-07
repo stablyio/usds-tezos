@@ -1,37 +1,40 @@
 import { flags } from "@oclif/command";
 
-import { SignCommand } from "../../signCommand";
-import { mint } from "../../tezos/mint";
-import config from "../../config";
+import { SignCommand } from "../signCommand";
+import { transfer } from "../tezos";
+import config from "../config";
 import cli from "cli-ux";
-import { YES_VALUES } from "../../constants";
+import { YES_VALUES } from "../constants";
 
-export default class Mint extends SignCommand {
+export default class Transfer extends SignCommand {
   static flags = {
     ...SignCommand.flags,
     address: flags.string({
-      description: "The address to mint to",
+      description: "The address to transfer to",
       required: true,
     }),
     amount: flags.string({
-      description: "The amount to mint (e.g. 154.23)",
+      description: "The amount to transfer (e.g. 154.23)",
       required: true,
     }),
   };
 
   async run() {
     await super.run();
-    const { flags } = this.parse(Mint);
+    const { flags } = this.parse(Transfer);
     const recipientAddress: string = flags.address;
-    const decimalMintAmount: number = Number(flags.amount);
+    const decimalTransferAmount: number = Number(flags.amount);
 
-    const rawMintAmount = this.decimalToIntRepresentation(
-      decimalMintAmount,
+    const rawTransferAmount = this.decimalToIntRepresentation(
+      decimalTransferAmount,
       config.token.decimals
     );
+    const senderAddress = await this.getSignerAddress();
 
-    this.log(`You are about to mint to: ${recipientAddress}`);
-    this.log(`A total of: ${decimalMintAmount} ${config.token.symbol}`);
+    this.log(
+      `You are about to transfer from ${senderAddress} to ${recipientAddress}`
+    );
+    this.log(`A total of: ${decimalTransferAmount} ${config.token.symbol}`);
     const confirmBroadcast = await cli.prompt("Confirm (Y/N)");
     if (!YES_VALUES.has(confirmBroadcast.toUpperCase())) {
       this.log("Aborting operation");
@@ -39,10 +42,11 @@ export default class Mint extends SignCommand {
     }
     try {
       cli.action.start("Broadcasting transaction");
-      const op = await mint(
+      const op = await transfer(
         this.tokenContract,
+        senderAddress,
         recipientAddress,
-        rawMintAmount
+        rawTransferAmount
       );
       cli.action.stop("acknowledged");
       this.log(`Tx hash: ${op.hash}`);
