@@ -1,0 +1,99 @@
+# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-License-Identifier: MIT
+
+<<: !include "./hpack/module.yaml"
+
+name:                stablecoin
+version:             1.4.0
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+- test/resources/stablecoin.tz
+- test/resources/metadata.tz
+
+synopsis:            FA2-based tezos stablecoin smart contract
+category:            Blockchain
+
+description:         Please see the README on GitHub at <https://github.com/tqtezos/stablecoin#readme>
+
+verbatim:
+  cabal-version: 2.2
+
+library:
+  <<: *lib-common
+
+  dependencies:
+    - aeson
+    - aeson-casing
+    - morley-prelude
+    - morley-client
+    - morley-ledgers
+    - lorentz
+    - morley
+    - containers
+    - indigo
+    - fmt
+    - optparse-applicative
+    - file-embed
+    - cleveland
+    - process
+    - megaparsec
+    - caps
+    - text
+    - singletons
+    - bytestring
+
+executables:
+  stablecoin-client:
+    main: Main.hs
+    source-dirs: client
+
+    dependencies:
+      - morley-prelude
+      - stablecoin
+
+tests:
+  stablecoin-test:
+    <<: *test-common
+    source-dirs:
+      - test
+      - test-common
+
+    dependencies:
+      - aeson
+      - morley
+      - morley-prelude
+      - morley-ledgers-test
+      - lorentz
+      - cleveland
+      - tasty
+      - tasty-hspec
+      - tasty-hunit-compat
+      - tasty-hedgehog
+      - hedgehog
+      - stablecoin
+      - hspec
+      - containers
+      - mtl
+      - fmt
+      - text
+      - bytestring
+      - interpolate
+
+  stablecoin-nettest:
+    <<: *test-common
+    source-dirs:
+      - test-common
+      - nettest
+
+    dependencies:
+      - containers
+      - lorentz
+      - morley
+      - morley-client
+      - cleveland
+      - morley-prelude
+      - optparse-applicative
+      - stablecoin
+      - with-utf8
