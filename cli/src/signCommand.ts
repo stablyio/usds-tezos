@@ -31,7 +31,7 @@ export abstract class SignCommand extends ReadCommand {
     }),
     hdwpath: flags.string({
       description:
-        "Specify a custom HD wallet derivation path and skip the prompt",
+        'Specify a custom HD wallet derivation path and skip the prompt. Must be a "hardened" path where every section ends with a `\'` character as enforced by the Tezos app on Ledger',
       dependsOn: ["sigmethod"],
       required: false,
     }),
@@ -67,9 +67,10 @@ export abstract class SignCommand extends ReadCommand {
         signer: new InMemorySigner(privkey as string),
       });
     } else if (sigmethod == "ledger") {
+      const hdwSelection = hdwpath ? hdwpath : TEZOS_HDW_PATHS[0];
       const transport = await TransportNodeHid.create();
       this.provider.setProvider({
-        signer: new LedgerSigner(transport, TEZOS_HDW_PATHS[0], false),
+        signer: new LedgerSigner(transport, hdwSelection, false),
       });
     } else {
       this.log(`Unsupported signing method ${sigmethod}`);
