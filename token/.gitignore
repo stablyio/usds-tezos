@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-License-Identifier: MIT
+.DS_Store
+.stack-work/
+
+TAGS
+
+*.hie
+
+# hpack
+**/*.cabal
+
+# We ignore Michelson files in `ligo/` directory because they are auto-generated.
+/ligo/*.tz
+
+# We also ignore them in `haskell/test/resources/` because they are symlinked for tests.
+/haskell/test/resources/stablecoin.tz
+/haskell/test/resources/stablecoin.fa1.2.tz
+/haskell/test/resources/metadata.tz

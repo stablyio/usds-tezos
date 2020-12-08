@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-License-Identifier: MIT
+
+# To update hackage and stackage indexes used by CI run:
+# $ niv update hackage.nix; niv update stackage.nix
+resolver: lts-16.5
+
+packages:
+- .
+
+extra-deps:
+- git:
+    https://gitlab.com/morley-framework/morley.git
+    # ^ CI cannot use ssh, so we use http clone here
+  commit:
+    9433a4df02b90a98cbba9b699db28901ba2e7119
+  subdirs:
+    - code/cleveland
+
+- git:
+    https://gitlab.com/morley-framework/morley.git
+    # ^ CI cannot use ssh, so we use http clone here
+  commit:
+    bdf6fe2f2ef7833dbe7ee65d61cf4b2e4691f365
+  subdirs:
+    - code/morley
+    - code/morley-client
+
+# Stable parts of morley available from Hackage
+- morley-prelude-0.3.0
+- tasty-hunit-compat-0.2
+- lorentz-0.6.2
+- indigo-0.3.0
+
+# Required by morley
+- base58-bytestring-0.1.0
+- hex-text-0.1.0.0
+- pretty-terminal-0.1.0.0
+- show-type-0.1.1
+- git: https://github.com/int-index/caps.git
+  commit: c5d61837eb358989b581ed82b1e79158c4823b1b
+- base-noprelude-4.13.0.0@sha256:3cccbfda38e1422ca5cc436d58858ba51ff9114d2ed87915a6569be11e4e5a90,6842
+- fmt-0.6.1.2@sha256:405a1bfc0ba0fd99f6eb1ee71f100045223f79204f961593012f28fd99cd1237,5319
+- named-0.3.0.1@sha256:69b9722301201f8ed8abc89c4595e22c746e944bf4cdfafa8b21b14d336b26d1,2233
+- vinyl-0.12.1@sha256:43456d4b3009646eee63953cbe539f1f4d0caf8bc3c25e841117e712836508f3,3790
+- cryptonite-0.27
+
+- git:
+    https://gitlab.com/morley-framework/morley-ledgers.git
+    # ^ CI cannot use ssh, so we use http clone here
+  commit:
+    552774ec4fe8a9da6afc77bbae31c30483402b9a # master
+  subdirs:
+    - code/morley-ledgers
+    - code/morley-ledgers-test
