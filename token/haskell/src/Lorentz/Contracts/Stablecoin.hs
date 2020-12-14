@@ -349,9 +349,9 @@ mkMetadataRegistryStorage symbol name decimals =
 defaultMetadataRegistryStorage :: MetadataRegistryStorage
 defaultMetadataRegistryStorage =
   mkMetadataRegistryStorage
-    [mt|TEST|]
-    [mt|Test|]
-    8
+    [mt|USDS|]
+    [mt|Stably USD|]
+    6
 
 -- This empty splice lets us workaround the GHC stage restriction, and refer to `Storage`
 -- in the TH splices below.
@@ -436,17 +436,18 @@ metadataMap = BigMap $ Map.fromList
 metadataJSON :: Metadata (ToT Storage)
 metadataJSON =
   Metadata
-    { mName = Just "stablecoin"
-    , mDescription = Nothing
+    { mName = Just "USDS"
+    , mDescription = Just "Stably USD"
     , mVersion = Just (toText $ showVersion version)
     , mLicense = Just License { lName = "MIT", lDetails = Nothing }
     , mAuthors =
         [ "Serokell <https://serokell.io/>"
         , "TQ Tezos <https://tqtezos.com/>"
+        , "Stably <https://www.stably.io/>"
         ]
-    , mHomepage = Just "https://github.com/tqtezos/stablecoin/"
+    , mHomepage = Just "https://www.stably.io/"
     , mSource = Just Source
-        { sLocation = "https://github.com/tqtezos/stablecoin/tree/v" <> toText (showVersion version) <> "/ligo/stablecoin"
+        { sLocation = "https://github.com/tqtezos/stablecoin/tree/v" <> toText (showVersion version) <> "/ligo/stablecoin" -- TODO Stably repo
         , sTools = [ "ligo " ] -- TODO: add ligo version
         }
     , mInterfaces = [ "TZIP-12", "TZIP-17" ]

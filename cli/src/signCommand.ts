@@ -8,7 +8,7 @@ import { InMemorySigner } from "@taquito/signer";
 import BigNumber from "bignumber.js";
 import cli from "cli-ux";
 import TransportNodeHid from "@ledgerhq/hw-transport-node-hid";
-import { LedgerSigner } from "@taquito/ledger-signer";
+import { DerivationType, LedgerSigner } from "@taquito/ledger-signer";
 
 import { ReadCommand } from "./readCommand";
 import { YES_VALUES, TEZOS_HDW_PATHS } from "./constants";
@@ -31,7 +31,7 @@ export abstract class SignCommand extends ReadCommand {
     }),
     hdwpath: flags.string({
       description:
-        'Specify a custom HD wallet derivation path and skip the prompt. Must be a "hardened" path where every section ends with a `\'` character as enforced by the Tezos app on Ledger',
+        'Specify a custom HD wallet derivation path instead of using the default. Must be a "hardened" path where every section ends with a `\'` character as enforced by the Tezos app on Ledger',
       dependsOn: ["sigmethod"],
       required: false,
     }),
@@ -70,7 +70,12 @@ export abstract class SignCommand extends ReadCommand {
       const hdwSelection = hdwpath ? hdwpath : TEZOS_HDW_PATHS[0];
       const transport = await TransportNodeHid.create();
       this.provider.setProvider({
-        signer: new LedgerSigner(transport, hdwSelection, false),
+        signer: new LedgerSigner(
+          transport,
+          hdwSelection,
+          false,
+          DerivationType.ED25519
+        ),
       });
     } else {
       this.log(`Unsupported signing method ${sigmethod}`);

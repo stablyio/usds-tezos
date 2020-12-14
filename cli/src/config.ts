@@ -7,10 +7,10 @@ const config = {
   },
   token: {
     address: {
-      delphinet: "KT1KzU8LTcrHMXL7bBTjrrJjsgtpxng4pqAG",
+      delphinet: "KT1W75RBtJunm1tGZF81hGP1rLrW8sb7rezz",
       mainnet: "",
     },
-    decimals: 8,
+    decimals: 6,
     symbol: "USDS",
     defaultTokenId: 0,
   },

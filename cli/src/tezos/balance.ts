@@ -7,12 +7,13 @@ export const balance = async (
   tokenStorage: TokenStorage,
   addressToQuery: string
 ) => {
-  const mutezBalance = provider.tz.getBalance(addressToQuery);
-  const rawTokenBalance = tokenStorage.ledger.get(
+  const mutezBalance = await provider.tz.getBalance(addressToQuery);
+  let rawTokenBalance = (await tokenStorage.ledger.get(
     addressToQuery
-  ) as Promise<BigNumber>;
+  )) as BigNumber;
+  rawTokenBalance = rawTokenBalance ? rawTokenBalance : new BigNumber(0); // Storage is undefined if not initialized for address
   return {
-    rawTokenBalance: await rawTokenBalance,
-    mutezBalance: await mutezBalance,
+    rawTokenBalance: rawTokenBalance,
+    mutezBalance: mutezBalance,
   };
 };
