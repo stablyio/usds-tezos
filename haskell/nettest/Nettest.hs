@@ -50,6 +50,8 @@ scNettestScenario originateTransferlist transferlistType = uncapsNettest $ do
   operator <- newAddress "Some operator"
   otherOperator <- newAddress "Other operator"
 
+  comment "Originating metadata contract"
+  cmrAddress <- nettestOriginateContractMetadataContract (metadataJSON Nothing)
   let
     originationParams =
         addAccount (superuser , ([operator], 1110000))
@@ -62,16 +64,14 @@ scNettestScenario originateTransferlist transferlistType = uncapsNettest $ do
           { opOwner = nettestOwner
           , opPauser = nettestPauser
           , opMasterMinter = nettestMasterMinter
+          , opMetadataUri = RemoteContract cmrAddress
           }
-
-  comment "Originating metadata registry contract"
-  mrAddress <- nettestOriginateMetadataRegistry
 
   comment "Originating stablecoin contract"
   scAddress <-
     originateUntypedSimple
       "nettest.Stablecoin"
-      (untypeValue (toVal (mkInitialStorage originationParams mrAddress)))
+      (untypeValue (toVal (mkInitialStorage originationParams)))
       (T.convertContract stablecoinContract)
 
   comment "Originating transferlist contract"
@@ -144,7 +144,9 @@ scNettestScenario originateTransferlist transferlistType = uncapsNettest $ do
         (AddressResolved from)
         sc
         (Call @"Update_operators")
-        [FA2.Add_operator FA2.OperatorParam { opOwner = from, opOperator = op, opTokenId = 0 }]
+        [ FA2.AddOperator
+            FA2.OperatorParam { opOwner = from, opOperator = op, opTokenId = FA2.theTokenId }
+        ]
 
     removeOperator :: Address -> Address -> capsM ()
     removeOperator from op =
@@ -152,7 +154,9 @@ scNettestScenario originateTransferlist transferlistType = uncapsNettest $ do
         (AddressResolved from)
         sc
         (Call @"Update_operators")
-        [FA2.Remove_operator FA2.OperatorParam { opOwner = from, opOperator = op, opTokenId = 0 }]
+        [ FA2.RemoveOperator
+            FA2.OperatorParam { opOwner = from, opOperator = op, opTokenId = FA2.theTokenId }
+        ]
 
     mint :: Address -> Natural -> capsM ()
     mint to_ value =
@@ -365,7 +369,7 @@ scNettestScenario originateTransferlist transferlistType = uncapsNettest $ do
 
       -- We originate a new contract to make sure the minters list is empty
       scAddress' <- do
-        let str = mkInitialStorage (originationParams { opMinters = mempty }) mrAddress
+        let str = mkInitialStorage (originationParams { opMinters = mempty })
         originateUntypedSimple "nettest.Stablecoin_for_minter_test" (untypeValue $ toVal str) (T.convertContract stablecoinContract)
 
       let

@@ -1,7 +1,6 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: MIT
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE PackageImports #-}
 
 module SMT
   ( smtProperty
@@ -26,7 +25,7 @@ import Michelson.Text
 import qualified Michelson.Typed as T
 import Tezos.Core (unsafeMkMutez)
 
-import qualified "stablecoin" Lorentz.Contracts.Spec.FA2Interface as FA2
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.Stablecoin
 import Lorentz.Contracts.Test.Common
 
@@ -83,7 +82,8 @@ generateContractInputs count = do
          gsPauserPool gsTokenOwnerPool
     operatorsMap = Map.fromList $ zip operators $ repeat ()
     startingStorage = SimpleStorage
-      gsMinterPool ledgerBalances owner masterMinter pauser pendingOwner Nothing operatorsMap isPaused
+      gsMinterPool ledgerBalances owner masterMinter pauser pendingOwner Nothing operatorsMap
+      isPaused (sum $ Map.elems ledgerBalances)
   inputs <- runReaderT (mapM generateAction [1..count]) generatorState
   pure (inputs, ContractState startingStorage [])
 
@@ -92,8 +92,7 @@ smtProperty :: Property
 smtProperty = property $ do
   PropertyTestInput (inputs, initialState) <- forAll genPropertyTestInput
   integrationalTestProp $ do
-    mrAddress <- originateMetadataRegistry
-    applyBothAndCompare inputs mrAddress initialState
+    applyBothAndCompare inputs initialState
 
 -- | Accept a contract, a list of contract inputs and an initial state.  Then
 -- apply each contract input to each model (haskell and michelson), check if
@@ -103,17 +102,16 @@ smtProperty = property $ do
 -- state diverges.
 applyBothAndCompare
   :: [ContractCall Parameter]
-  -> Address
   -> ContractState
   -> IntegrationalScenario
-applyBothAndCompare [] _ _ = pass
-applyBothAndCompare (cc:ccs) mrAddress cs = let
+applyBothAndCompare [] _ = pass
+applyBothAndCompare (cc:ccs) cs = let
   haskellResult = stablecoinHaskellModel cc cs
-  michelsonResult = stablecoinMichelsonModel mrAddress cc cs
+  michelsonResult = stablecoinMichelsonModel cc cs
   in if haskellResult /= michelsonResult
     then integrationalFail $ CustomTestError $
          "Models differ : " <> show (cc, cs, haskellResult, michelsonResult)
-    else applyBothAndCompare ccs mrAddress haskellResult
+    else applyBothAndCompare ccs haskellResult
 
 -- Size of the random address pool
 poolSize :: Int
@@ -162,6 +160,7 @@ data SimpleStorage = SimpleStorage
   , ssTransferlistContract :: Maybe Address
   , ssOperators :: Map (Address, Address) ()
   , ssIsPaused :: Bool
+  , ssTotalSupply :: Natural
   } deriving stock (Eq, Generic, Show)
 
 instance Buildable SimpleStorage where
@@ -183,6 +182,7 @@ storageToSs storage = SimpleStorage
   , ssTransferlistContract = sTransferlistContract storage
   , ssOperators = T.unBigMap $ sOperators storage
   , ssIsPaused = sIsPaused storage
+  , ssTotalSupply = sTotalSupply storage
   }
 
 ssToOriginationParams
@@ -411,10 +411,10 @@ generateTokenOwnerAction idx = do
       operator <- getRandomOperator
       owner <- getRandomOwner
       updateOperation <- Gen.element
-        [ FA2.Add_operator FA2.OperatorParam { opOwner = owner, opOperator = operator, opTokenId = 0 }
-        , FA2.Add_operator FA2.OperatorParam { opOwner = owner, opOperator = operator, opTokenId = 1 }
-        , FA2.Remove_operator FA2.OperatorParam { opOwner = owner, opOperator = operator, opTokenId = 0 }
-        , FA2.Remove_operator FA2.OperatorParam { opOwner = owner, opOperator = operator, opTokenId = 1 }
+        [ FA2.AddOperator FA2.OperatorParam { opOwner = owner, opOperator = operator, opTokenId = FA2.theTokenId }
+        , FA2.AddOperator FA2.OperatorParam { opOwner = owner, opOperator = operator, opTokenId = oneTokenId }
+        , FA2.RemoveOperator FA2.OperatorParam { opOwner = owner, opOperator = operator, opTokenId = FA2.theTokenId }
+        , FA2.RemoveOperator FA2.OperatorParam { opOwner = owner, opOperator = operator, opTokenId = oneTokenId }
         ]
       pure $ Call_FA2 $ FA2.Update_operators [updateOperation]
 
@@ -424,9 +424,9 @@ generateTransferAction = do
   txs <- replicateM 10 $ do
     to <- getRandomTokenOwner
     amount <- Gen.integral (Range.constant 0 amountRange)
-    pure FA2.TransferDestination { tdTo = to, tdTokenId = 0, tdAmount = amount }
+    pure FA2.TransferDestination { tdTo = to, tdTokenId = FA2.theTokenId, tdAmount = amount }
   stxs <- Gen.subsequence txs
-  let transferItem = FA2.TransferParam { tpFrom = from, tpTxs = stxs }
+  let transferItem = FA2.TransferItem { tiFrom = from, tiTxs = stxs }
   pure $ Call_FA2 $ FA2.Transfer [transferItem]
 
 generateOperatorAction :: Int -> GeneratorM (ContractCall Parameter)
@@ -499,13 +499,12 @@ contractErrorToModelError m = let
 -- the final @ContractState@ from Haskell model and this model should
 -- match exactly, including the list of errors.
 stablecoinMichelsonModel
-  :: Address
-  -> ContractCall Parameter
+  :: ContractCall Parameter
   -> ContractState
   -> ContractState
-stablecoinMichelsonModel mrAddress cc@(ContractCall {..}) cs = let
+stablecoinMichelsonModel cc@(ContractCall {..}) cs = let
   contractEnv = dummyContractEnv { ceSender = ccSender, ceAmount = unsafeMkMutez 0 }
-  initSt = mkInitialStorage (ssToOriginationParams $ csStorage cs) mrAddress
+  initSt = mkInitialStorage (ssToOriginationParams $ csStorage cs)
   iResult = callEntrypoint cc initSt contractEnv
   in case iResult of
     Right iRes -> let
@@ -575,11 +574,11 @@ ensurePaused SimpleStorage {..} = if ssIsPaused then Right () else Left CONTRACT
 
 validateTokenId :: FA2.UpdateOperator -> Either ModelError ()
 validateTokenId = \case
-  FA2.Add_operator op -> validateTokenId' op
-  FA2.Remove_operator op -> validateTokenId' op
+  FA2.AddOperator op -> validateTokenId' op
+  FA2.RemoveOperator op -> validateTokenId' op
   where
     validateTokenId' :: FA2.OperatorParam -> Either ModelError ()
-    validateTokenId' FA2.OperatorParam {..} = if opTokenId == 0 then Right () else Left FA2_TOKEN_UNDEFINED
+    validateTokenId' FA2.OperatorParam {..} = if opTokenId == FA2.theTokenId then Right () else Left FA2_TOKEN_UNDEFINED
 
 ensureMinter :: Address -> SimpleStorage -> Either ModelError Natural
 ensureMinter minter cs = case Map.lookup minter $ ssMintingAllowances cs of
@@ -643,7 +642,10 @@ reduceMintingAllowance minter amount ss@SimpleStorage {..} =
 
 applySingleMint :: MintParam -> SimpleStorage -> SimpleStorage
 applySingleMint (MintParam to value) storage =
-  storage { ssLedger = Map.alter (\case Nothing -> Just value; Just x -> Just $ x + value) to $ ssLedger storage }
+  storage
+    { ssTotalSupply = ssTotalSupply storage + value
+    , ssLedger = Map.alter
+        (\case Nothing -> Just value; Just x -> Just $ x + value) to $ ssLedger storage }
 
 applyMint :: Address -> SimpleStorage -> MintParams -> Either ModelError SimpleStorage
 applyMint sender cs mintparams = do
@@ -660,19 +662,24 @@ applyBurn ccSender cs burnparams = do
   void $ ensureMinter ccSender cs
   let totalBurn = sum burnparams
   if totalBurn <= (fromMaybe 0 $ Map.lookup ccSender $ ssLedger cs)
-    then let
-      burn value storage =
-        storage { ssLedger = Map.alter (\case
-          Nothing -> if value > 0
-            then error ("Unexpected burn:" <> show value)
-            else Nothing
-                -- As per FA2, burn should follow the tranfer logic, which allows zero transfer
-                -- from non-existant accounts. So here we should do nothing, instead of throwing an
-                -- error.
-          Just x -> let b = x - value
-            in if b > 0 then Just b else Nothing) ccSender $ ssLedger cs }
-      in Right $ foldr burn cs burnparams
+    then if totalBurn > ssTotalSupply cs
+      then error ("Unexpected burn:" <> show totalBurn)
+      else let
+        newStorageAfterBurn = foldr (applySingleBurn ccSender) cs burnparams
+        in Right $ newStorageAfterBurn { ssTotalSupply = ssTotalSupply cs - totalBurn }
     else Left FA2_INSUFFICIENT_BALANCE
+
+applySingleBurn :: Address -> Natural -> SimpleStorage -> SimpleStorage
+applySingleBurn src value storage =
+  storage { ssLedger = Map.alter (\case
+    Nothing -> if value > 0
+      then error ("Unexpected burn:" <> show value)
+      else Nothing
+          -- As per FA2, burn should follow the tranfer logic, which allows zero transfer
+          -- from non-existant accounts. So here we should do nothing, instead of throwing an
+          -- error.
+    Just x -> let b = x - value
+      in if b > 0 then Just b else Nothing) src $ ssLedger storage }
 
 applyTransferOwnership :: Address -> SimpleStorage -> TransferOwnershipParam -> Either ModelError SimpleStorage
 applyTransferOwnership sender cs newOwner = do
@@ -723,8 +730,8 @@ applyTransfer ccSender storage tis = do
   ensureNotPaused storage
   foldl' (applySingleTransfer ccSender) (Right storage) tis
 
-applySingleTransfer :: Address -> Either ModelError SimpleStorage -> FA2.TransferParam -> Either ModelError SimpleStorage
-applySingleTransfer ccSender estorage (FA2.TransferParam from txs) =
+applySingleTransfer :: Address -> Either ModelError SimpleStorage -> FA2.TransferItem -> Either ModelError SimpleStorage
+applySingleTransfer ccSender estorage (FA2.TransferItem from txs) =
   case estorage of
     Left err -> Left err
     Right storage@(SimpleStorage {..}) ->
@@ -746,13 +753,13 @@ applyUpdateOperator ccSender estorage op = case estorage of
   Right storage -> do
     ensureNotPaused storage
     case op of
-      FA2.Add_operator (FA2.OperatorParam own operator _)
+      FA2.AddOperator (FA2.OperatorParam own operator _)
         -> if own == ccSender -- enforce that sender is owner
           then do
             validateTokenId op
             Right $ storage { ssOperators = Map.insert (own, operator) () $ ssOperators storage }
           else Left NOT_TOKEN_OWNER
-      FA2.Remove_operator (FA2.OperatorParam own operator _)
+      FA2.RemoveOperator (FA2.OperatorParam own operator _)
         -> if own == ccSender
           then do
             validateTokenId op

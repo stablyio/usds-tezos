@@ -4,7 +4,7 @@
 <<: !include "./hpack/module.yaml"
 
 name:                stablecoin
-version:             1.4.0
+version:             1.5.0
 
 extra-source-files:
 - README.md
@@ -29,6 +29,7 @@ library:
     - morley-prelude
     - morley-client
     - morley-ledgers
+    - morley-metadata
     - lorentz
     - morley
     - containers
@@ -41,7 +42,6 @@ library:
     - megaparsec
     - caps
     - text
-    - singletons
     - bytestring
 
 executables:
@@ -62,24 +62,27 @@ tests:
 
     dependencies:
       - aeson
-      - morley
-      - morley-prelude
-      - morley-ledgers-test
-      - lorentz
+      - bytestring
       - cleveland
+      - containers
+      - fmt
+      - hedgehog
+      - hspec
+      - interpolate
+      - lorentz
+      - morley
+      - morley-ledgers
+      - morley-ledgers-test
+      - morley-metadata
+      - morley-metadata-test
+      - morley-prelude
+      - mtl
+      - stablecoin
       - tasty
+      - tasty-hedgehog
       - tasty-hspec
       - tasty-hunit-compat
-      - tasty-hedgehog
-      - hedgehog
-      - stablecoin
-      - hspec
-      - containers
-      - mtl
-      - fmt
       - text
-      - bytestring
-      - interpolate
 
   stablecoin-nettest:
     <<: *test-common
@@ -88,12 +91,17 @@ tests:
       - nettest
 
     dependencies:
+      - aeson
+      - cleveland
       - containers
       - lorentz
       - morley
       - morley-client
-      - cleveland
+      - morley-ledgers
+      - morley-metadata
+      - morley-metadata-test
       - morley-prelude
       - optparse-applicative
       - stablecoin
+      - text
       - with-utf8

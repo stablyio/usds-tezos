@@ -8,9 +8,9 @@ SPDX-License-Identifier: MIT
 [![Build status](https://badge.buildkite.com/c38c76106a10aeaea23f487d41b52514f4ffb84974852021f7.svg?branch=master)](https://buildkite.com/serokell/stablecoin)
 
 Tezos Stablecoin project implements an FA2-compatible token smart contract.
-It draws inspiration from the [CENTRE Fiat Token](https://github.com/centrehq/centre-tokens/blob/78d964a1a8d481ffd8152772d7a66e47df54b3db/doc/tokendesign.md) and other similar contracts.
+It draws inspiration from popular permissioned asset contracts like [CENTRE Fiat Token](https://github.com/centrehq/centre-tokens/blob/78d964a1a8d481ffd8152772d7a66e47df54b3db/doc/tokendesign.md) and other similar contracts.
 The contract is implemented in the [LIGO language](https://ligolang.org/).
-This reposiory consists of the following:
+This repository consists of the following:
 1. LIGO source code of the Stablecoin smart contract and auxiliary smart contracts in the [`ligo/`](ligo/) folder.
 1. [Contract specification](/docs/specification.md).
 1. Haskell bindings with data types corresponding to Stablecoin.
@@ -25,8 +25,8 @@ The project also includes an alternative FA1.2-compatible smart contract, availa
 ## How to get
 
 You can download Michelson source code of all provided smart contracts in [release assets](https://github.com/tqtezos/stablecoin/releases/latest).
-We also provide static `stablecoin-client` executable that should work on any x86_64 Linux system.
-If you are using a different operating OS or just want to build from sources, see [instructions below](#build-instructions).
+We also provide a static `stablecoin-client` executable that should work on any x86_64 Linux system.
+If you are using a different OS or just want to build from sources, see [instructions below](#build-instructions).
 
 ## Usage
 
@@ -50,17 +50,17 @@ Please refer to the [`haskell/`](/haskell/) directory for details.
 ## Gas / Transaction costs
 
 The tables below show the gas and transaction costs of both versions (FA1.2 and FA2) of
-the stablecoin contract [v1.4.0](https://github.com/tqtezos/stablecoin/releases/tag/v1.4.0) in Delphinet.
+the stablecoin contract [v1.6.0](https://github.com/tqtezos/stablecoin/releases/tag/v1.6.0) in Delphinet.
 
 ### Delphinet
 
-* [FA1.2 operations](https://better-call.dev/delphinet/KT1AMAqrzMQqB6QK724Bagp8LL2JrdXEF3By/operations)
-* [FA2 operations](https://better-call.dev/delphinet/KT1G3n8sDudm1FzCn9JYa5BM2QRaxgKry8My/operations)
+* [FA1.2 operations](https://better-call.dev/delphinet/KT19DJHmmtzDXNM2P85rNW9tvzJA81FixmZg/operations)
+* [FA2 operations](https://better-call.dev/delphinet/KT1EPZpTPzZjZ1gkVgxcBdyGPL2wGXbZQUtw/operations)
 
 |             | FA1.2 Gas cost | FA2 Gas cost | FA1.2 Tx cost | FA2 Tx cost |
 | ----------- | -------------- | ------------ | ------------- | ----------- |
-| origination | 75928          | 72689        | 3.942008 ꜩ    | 3.87493 ꜩ   |
-| transfer    | 79196          | 73293        | 0.007978 ꜩ    | 0.007702 ꜩ  |
+| origination | 65562          | 62794        | 2.867005 ꜩ    | 2.816774 ꜩ  |
+| transfer    | 67566          | 65206        | 0.007115 ꜩ    | 0.006893 ꜩ  |
 
 ### Measuring
 

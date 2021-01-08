@@ -8,6 +8,24 @@ SPDX-License-Identifier: MIT
 <!-- Prepend new entries here -->
 <!-- Don't forget to update the gas/transaction costs tables in the
 README when a new version is released. -->
+
+## 1.6.0
+
+* [#151](https://github.com/tqtezos/stablecoin/pull/151)
+  * Remove `token_metadata_registry` entrypoint.
+  * Add TZIP-16 storage views as required by TZIP-12.
+
+## 1.5.0
+
+* [#144](https://github.com/tqtezos/stablecoin/pull/144)
+  * Add `total_supply` field to the contract.
+
+* [#142](https://github.com/tqtezos/stablecoin/pull/142)
+  * Deploy TZIP-16 metadata to an external contract by default.
+  * Provide deploy options `--contract-metadata-in-place` and
+    `--contract-metadata-off-chain` to let user to embed the metadata
+    in contract or to use a custom metadata offline uri respectievely.
+
 ## 1.4.0
 
 * [#134](https://github.com/tqtezos/stablecoin/pull/134)

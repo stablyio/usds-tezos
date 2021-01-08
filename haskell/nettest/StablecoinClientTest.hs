@@ -7,7 +7,6 @@ module StablecoinClientTest
   ( stablecoinClientScenario
   ) where
 
-import Michelson.Text (mt)
 import Morley.Nettest as NT
 import Tezos.Address (Address)
 import Util.Named ((.!))
@@ -21,6 +20,7 @@ import Stablecoin.Client.Cleveland
   mint, pause, removeMinter, revealKeyUnlessRevealed, setTransferlist, transferOwnership, unpause,
   updateOperators)
 import qualified Stablecoin.Client.Cleveland as SC
+import Stablecoin.Client.Parser (ContractMetadataOptions(..))
 
 -- | Check that all the `stablecoin-client` commands work.
 stablecoinClientScenario :: StablecoinScenario m ()
@@ -33,7 +33,6 @@ stablecoinClientScenario = do
   (contractOwnerAlias, contractOwnerAddr, contractOwner) <- createRole "contract-owner"
   (_, _, minter) <- createRole "minter"
   (transferlistAlias, transferlistAddr, transferlist) <- createRole "transferlist"
-  (_, _, mdRegisty) <- createRole "metadata-registry"
 
   comment "Deploying contract"
   contractAddr <- deploy (#sender.! originator) InitialStorageData
@@ -41,14 +40,13 @@ stablecoinClientScenario = do
     , isdContractOwner = contractOwner
     , isdPauser = pauser
     , isdTransferlist = Just transferlist
-    , isdTokenSymbol = [mt|a|]
-    , isdTokenName = [mt|b|]
+    , isdTokenSymbol = "a"
+    , isdTokenName = "b"
     , isdTokenDecimals = 3
-    , isdTokenMetadataRegistry = Just mdRegisty
     , isdDefaultExpiry = 1000
+    , isdContractMetadataStorage = OpRemoteContract
     }
   let contract = #contract .! AddressResolved contractAddr
-
   comment "Testing get-balance"
   actualBalance <- SC.getBalance contract
   expectedBalance <- NT.getBalance (AddressResolved contractAddr)

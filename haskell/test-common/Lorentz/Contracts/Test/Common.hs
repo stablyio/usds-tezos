@@ -1,12 +1,12 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: MIT
 
-{-# LANGUAGE PackageImports #-}
-
 -- | Test commons for stablecoin test suite
 
 module Lorentz.Contracts.Test.Common
-  ( testOwner
+  ( oneTokenId
+
+  , testOwner
   , testOwnerPK
   , testOwnerSK
   , testPauser
@@ -26,6 +26,7 @@ module Lorentz.Contracts.Test.Common
   , wallet5
   , commonOperator
   , commonOperators
+  , checkView
 
   , OriginationFn
   , OriginationParams (..)
@@ -39,29 +40,38 @@ module Lorentz.Contracts.Test.Common
   , withOriginated
   , mgmContractPaused
   , mkInitialStorage
-  , originateMetadataRegistry
-  , nettestOriginateMetadataRegistry
+  , nettestOriginateContractMetadataContract
+  , testFA2TokenMetadata
 
   , lExpectAnyMichelsonFailed
   ) where
 
+import Data.Aeson (ToJSON)
 import Data.List.NonEmpty ((!!))
 import qualified Data.Map as Map
 
 import Lorentz (arg)
+import qualified Lorentz.Contracts.Spec.TZIP16Interface as MD
 import Lorentz.Test
 import Lorentz.Value
 import Michelson.Runtime (ExecutorError)
 import Michelson.Runtime.GState (genesisSecrets)
-import Michelson.Test (tOriginate)
 import Michelson.Typed (convertContract, untypeValue)
 import Morley.Nettest as NT
 import Tezos.Crypto (SecretKey, toPublic)
 import Util.Named
 
 import qualified Indigo.Contracts.Transferlist.Internal as Transferlist
-import "stablecoin" Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.Stablecoin as SC
+import qualified Morley.Metadata as MD
+import qualified Test.Morley.Metadata as MD
+
+-- | A 'TokenId' with the value of `1`.
+-- This is used only for tests because @stablecoin@ only supports a single token
+-- with the value of 0, aka 'theTokenId'.
+oneTokenId :: TokenId
+oneTokenId = TokenId 1
 
 testOwner, testPauser, testMasterMinter, wallet1, wallet2, wallet3, wallet4, wallet5, commonOperator :: Address
 wallet1 = genesisAddress1
@@ -121,7 +131,7 @@ data OriginationParams = OriginationParams
   , opPaused :: Bool
   , opMinters :: Map Address Natural
   , opPendingOwner :: Maybe Address
-  , opTokenMetadataRegistry :: Maybe Address
+  , opMetadataUri :: MetadataUri (MD.Metadata (ToT Storage))
   , opTransferlistContract :: Maybe (TAddress Transferlist.Parameter)
   , opDefaultExpiry :: Natural
   , opPermits :: Map Address UserPermits
@@ -137,7 +147,7 @@ defaultOriginationParams = OriginationParams
   , opPaused = False
   , opMinters = mempty
   , opPendingOwner = Nothing
-  , opTokenMetadataRegistry = Nothing
+  , opMetadataUri = CurrentContract (metadataJSON $ Just testFA2TokenMetadata) True
   , opTransferlistContract = Nothing
   , opDefaultExpiry = 1000
   , opPermits = mempty
@@ -155,7 +165,7 @@ constructDestination
   -> TransferDestination
 constructDestination (arg #to_ -> to, arg #amount -> amount) = TransferDestination
   { tdTo = to
-  , tdTokenId = 0
+  , tdTokenId = FA2.theTokenId
   , tdAmount = amount
   }
 
@@ -169,9 +179,9 @@ constructTransfersFromSender
   -> [("to_" :! Address, "amount" :! Natural)]
   -> TransferParams
 constructTransfersFromSender (arg #from_ -> from) txs =
-  [ TransferParam
-      { tpFrom = from
-      , tpTxs = constructDestination <$> txs
+  [ TransferItem
+      { tiFrom = from
+      , tiTxs  = constructDestination <$> txs
       }
   ]
 
@@ -181,7 +191,7 @@ constructSingleTransfer
   -> "amount" :! Natural
   -> TransferParams
 constructSingleTransfer (arg #from_ -> from) (arg #to_ -> to) (arg #amount -> amount)
-    = [TransferParam from [TransferDestination to 0 amount]]
+    = [TransferItem from [TransferDestination to FA2.theTokenId amount]]
 
 -- | The return value of this function is a Maybe to handle the case where a contract
 -- having hardcoded permission descriptor, and thus unable to initialize with a custom
@@ -199,8 +209,8 @@ withOriginated
   -> IntegrationalScenario
 withOriginated fn op tests = fn op >>= tests
 
-mkInitialStorage :: OriginationParams -> Address -> Storage
-mkInitialStorage OriginationParams{..} metadataRegistryAddress =
+mkInitialStorage :: OriginationParams -> Storage
+mkInitialStorage OriginationParams{..} =
   Storage
     { sDefaultExpiry = opDefaultExpiry
     , sLedger = BigMap opBalances
@@ -215,9 +225,9 @@ mkInitialStorage OriginationParams{..} metadataRegistryAddress =
         , rPauser = opPauser
         , rPendingOwner = opPendingOwner
         }
-    , sTokenMetadataRegistry = fromMaybe metadataRegistryAddress opTokenMetadataRegistry
     , sTransferlistContract = unTAddress <$> opTransferlistContract
-    , sMetadata = metadataMap
+    , sMetadata = metadataMap opMetadataUri
+    , sTotalSupply = sum $ Map.elems opBalances
     }
   where
     foldFn
@@ -230,17 +240,18 @@ mkInitialStorage OriginationParams{..} metadataRegistryAddress =
 mgmContractPaused :: ExecutorError -> IntegrationalScenario
 mgmContractPaused = lExpectFailWith (== [mt|CONTRACT_PAUSED|])
 
-originateMetadataRegistry :: IntegrationalScenarioM Address
-originateMetadataRegistry =
-  tOriginate
-    registryContract
-    "Metadata Registry contract"
-    (toVal defaultMetadataRegistryStorage)
-    (toMutez 0)
-
-nettestOriginateMetadataRegistry :: MonadNettest caps base m => m Address
-nettestOriginateMetadataRegistry =
+nettestOriginateContractMetadataContract :: (ToJSON metadata) => MonadNettest caps base m => metadata -> m Address
+nettestOriginateContractMetadataContract mdata =
   originateUntypedSimple
-    "nettest.MetadataRegistry"
-    (untypeValue (toVal defaultMetadataRegistryStorage))
-    (convertContract registryContract)
+    "nettest.ContractMetadata"
+    (untypeValue (toVal $ mkContractMetadataRegistryStorage $  metadataMap (CurrentContract mdata False)))
+    (convertContract contractMetadataContract)
+
+checkView
+  :: forall viewVal parameter
+   . (IsoValue viewVal, Eq viewVal, Show viewVal)
+  => TAddress parameter -> Text -> MD.ViewParam -> viewVal -> IntegrationalScenario
+checkView = MD.checkView sMetadata
+
+testFA2TokenMetadata :: FA2.TokenMetadata
+testFA2TokenMetadata = FA2.mkTokenMetadata "TEST" "TEST" "3"
