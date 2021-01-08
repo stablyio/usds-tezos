@@ -16,7 +16,7 @@ stablecoin.tz: $(sources)
 stablecoin.fa1.2.tz: $(sources)
 	$(LIGO) compile-contract --syntax pascaligo stablecoin/fa1.2/core.ligo stablecoin_main > stablecoin.fa1.2.tz
 
-# Compile metadata LIGO contract into its michelson representation
+# Compile contract metadata LIGO contract into its michelson representation
 metadata.tz: $(sources)
 	$(LIGO) compile-contract --syntax pascaligo stablecoin/metadata.ligo metadata > metadata.tz
 

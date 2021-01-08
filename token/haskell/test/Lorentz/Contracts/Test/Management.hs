@@ -1,8 +1,6 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: MIT
 
-{-# LANGUAGE PackageImports #-}
-
 -- | Tests for management entrypoints of stablecoin smart-contract
 
 module Lorentz.Contracts.Test.Management
@@ -18,7 +16,7 @@ import Data.Map.Strict as M (size)
 import qualified Data.Set as Set
 import Test.Hspec (Spec, describe, it)
 
-import Lorentz (mkView, mt, unBigMap)
+import Lorentz (mt, unBigMap)
 import Lorentz.Address
 import Lorentz.Test
 import Michelson.Runtime (ExecutorError)
@@ -27,7 +25,7 @@ import Tezos.Core (unsafeMkMutez)
 import Util.Named
 
 import qualified Indigo.Contracts.Transferlist.Internal as Transferlist
-import qualified "stablecoin" Lorentz.Contracts.Spec.FA2Interface as FA2
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.Stablecoin hiding (stablecoinContract)
 import Lorentz.Contracts.Test.Common
 
@@ -96,14 +94,6 @@ managementSpec originate = do
           -- Dummy transfer needed to call something from a contract since we don't have default entrypoint set
           (constructTransfersFromSender (#from_ .! wallet1) [])
         mgmXtzReceived err
-
-    it "token metadata registry is present in storage" $ integrationalTestExpectation $ do
-      mrAddress <- originateMetadataRegistry
-      let originationParams = defaultOriginationParams { opTokenMetadataRegistry = Just mrAddress }
-      withOriginated originate originationParams $ \stablecoinContract -> do
-        lExpectStorage @Storage stablecoinContract $ \storage ->
-          unless (sTokenMetadataRegistry storage == mrAddress) $
-            Left $ CustomTestError "Malformed token metadata registry address in contract storage"
 
   describe "Contract pausing" $ do
     it "pauses contract as expected" $ integrationalTestExpectation $ do
@@ -184,15 +174,24 @@ managementSpec originate = do
         consumer <- lOriginateEmpty @[FA2.BalanceResponseItem] contractConsumer "consumer"
         let
           balanceRequestItems =
-            [ FA2.BalanceRequestItem wallet1 0
-            , FA2.BalanceRequestItem wallet2 0
-            , FA2.BalanceRequestItem wallet3 0
+            [ FA2.BalanceRequestItem wallet1 FA2.theTokenId
+            , FA2.BalanceRequestItem wallet2 FA2.theTokenId
+            , FA2.BalanceRequestItem wallet3 FA2.theTokenId
             ]
-          balanceRequest = mkView (#requests .! balanceRequestItems) consumer
+          balanceRequest = FA2.mkFA2View balanceRequestItems consumer
           balanceExpected =
-            [ FA2.BalanceResponseItem { briRequest = FA2.BalanceRequestItem wallet1 0, briBalance = 0 }
-            , FA2.BalanceResponseItem { briRequest = FA2.BalanceRequestItem wallet2 0, briBalance = 0 }
-            , FA2.BalanceResponseItem { briRequest = FA2.BalanceRequestItem wallet3 0, briBalance = 10 }
+            [ FA2.BalanceResponseItem
+                { briRequest = FA2.BalanceRequestItem wallet1 FA2.theTokenId
+                , briBalance = 0
+                }
+            , FA2.BalanceResponseItem
+                { briRequest = FA2.BalanceRequestItem wallet2 FA2.theTokenId
+                , briBalance = 0
+                }
+            , FA2.BalanceResponseItem
+                { briRequest = FA2.BalanceRequestItem wallet3 FA2.theTokenId
+                , briBalance = 10
+                }
             ]
 
         lCallEP stablecoinContract (Call @"Balance_of") balanceRequest
@@ -374,7 +373,7 @@ managementSpec originate = do
 
 
   describe "Minting" $ do
-    it "successfully mints tokens" $ integrationalTestExpectation $ do
+    it "successfully mints tokens and updates total_supply" $ integrationalTestExpectation $ do
       let
         originationParams =
             addMinter (wallet1, 30)
@@ -392,20 +391,33 @@ managementSpec originate = do
         consumer <- lOriginateEmpty @[FA2.BalanceResponseItem] contractConsumer "consumer"
         let
           balanceRequestItems =
-            [ FA2.BalanceRequestItem wallet1 0
-            , FA2.BalanceRequestItem wallet2 0
-            , FA2.BalanceRequestItem wallet3 0
+            [ FA2.BalanceRequestItem wallet1 FA2.theTokenId
+            , FA2.BalanceRequestItem wallet2 FA2.theTokenId
+            , FA2.BalanceRequestItem wallet3 FA2.theTokenId
             ]
-          balanceRequest = mkView (#requests .! balanceRequestItems) consumer
+          balanceRequest = FA2.mkFA2View balanceRequestItems consumer
           balanceExpected =
-            [ FA2.BalanceResponseItem { briRequest = FA2.BalanceRequestItem wallet1 0, briBalance = 10 }
-            , FA2.BalanceResponseItem { briRequest = FA2.BalanceRequestItem wallet2 0, briBalance = 5 }
-            , FA2.BalanceResponseItem { briRequest = FA2.BalanceRequestItem wallet3 0, briBalance = 15 }
+            [ FA2.BalanceResponseItem
+                { briRequest = FA2.BalanceRequestItem wallet1 FA2.theTokenId
+                , briBalance = 10
+                }
+            , FA2.BalanceResponseItem
+                { briRequest = FA2.BalanceRequestItem wallet2 FA2.theTokenId
+                , briBalance = 5
+                }
+            , FA2.BalanceResponseItem
+                { briRequest = FA2.BalanceRequestItem wallet3 FA2.theTokenId
+                , briBalance = 15
+                }
             ]
 
         lCallEP stablecoinContract (Call @"Balance_of") balanceRequest
 
         lExpectViewConsumerStorage consumer [balanceExpected]
+
+        lExpectStorage @Storage stablecoinContract $ \(sTotalSupply -> ts) ->
+          unless (ts == 30) $ -- Started with 0 tokens and minted 30 tokens so total supply should be 30
+            Left $ CustomTestError "Total supply was not updated as expected"
 
     it "aborts whole transaction if the sum of minting tokens at a given step exceeds current minting allowance" $ integrationalTestExpectation $ do
       let
@@ -443,7 +455,7 @@ managementSpec originate = do
 
 
   describe "Burning" $ do
-    it "burns tokens as expected" $ integrationalTestExpectation $ do
+    it "burns tokens and updates total_supply as expected" $ integrationalTestExpectation $ do
       let
         originationParams =
             addMinter (wallet1, 0)
@@ -459,18 +471,28 @@ managementSpec originate = do
         consumer <- lOriginateEmpty @[FA2.BalanceResponseItem] contractConsumer "consumer"
         let
           balanceRequestItems =
-            [ FA2.BalanceRequestItem wallet1 0
-            , FA2.BalanceRequestItem wallet2 0
+            [ FA2.BalanceRequestItem wallet1 FA2.theTokenId
+            , FA2.BalanceRequestItem wallet2 FA2.theTokenId
             ]
-          balanceRequest = mkView (#requests .! balanceRequestItems) consumer
+          balanceRequest = FA2.mkFA2View balanceRequestItems consumer
           balanceExpected =
-            [ FA2.BalanceResponseItem { briRequest = FA2.BalanceRequestItem wallet1 0, briBalance = 5 }
-            , FA2.BalanceResponseItem { briRequest = FA2.BalanceRequestItem wallet2 0, briBalance = 0 }
+            [ FA2.BalanceResponseItem
+                { briRequest = FA2.BalanceRequestItem wallet1 FA2.theTokenId
+                , briBalance = 5
+                }
+            , FA2.BalanceResponseItem
+                { briRequest = FA2.BalanceRequestItem wallet2 FA2.theTokenId
+                , briBalance = 0
+                }
             ]
 
         lCallEP stablecoinContract (Call @"Balance_of") balanceRequest
 
         lExpectViewConsumerStorage consumer [balanceExpected]
+
+        lExpectStorage @Storage stablecoinContract $ \(sTotalSupply -> ts) ->
+          unless (ts == 5) $ -- Started with 35 tokens and burned 30 tokens so total supply should be 5
+            Left $ CustomTestError "Total supply was not updated as expected"
 
     it "removes account if balance after burning is zero" $ integrationalTestExpectation $ do
 
@@ -704,7 +726,7 @@ managementSpec originate = do
         withOriginated originate originationParams $ \stablecoinContract -> do
           let
             transfers =
-              [FA2.TransferParam wallet1 [FA2.TransferDestination wallet2 0 10]]
+              [FA2.TransferItem wallet1 [FA2.TransferDestination wallet2 FA2.theTokenId 10]]
 
           err <- expectError $ withSender commonOperator $
             lCallEP stablecoinContract (Call @"Transfer") transfers
@@ -749,9 +771,9 @@ managementSpec originate = do
         withOriginated originate originationParams $ \stablecoinContract -> do
           let
             transfers =
-              [ FA2.TransferParam
-                  { tpFrom = wallet1
-                  , tpTxs = [FA2.TransferDestination { tdTo = wallet2, tdTokenId = 0, tdAmount = 10 }]
+              [ FA2.TransferItem
+                  { tiFrom = wallet1
+                  , tiTxs = [FA2.TransferDestination { tdTo = wallet2, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
                   }
               ]
 

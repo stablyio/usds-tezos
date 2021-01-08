@@ -16,7 +16,7 @@ import Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.Stablecoin as SFA2
 import Lorentz.Contracts.StablecoinFA1_2 as SFA1_2
 
-import Lorentz.Contracts.Test.Common (nettestOriginateMetadataRegistry)
+import Lorentz.Contracts.Test.Common (nettestOriginateContractMetadataContract)
 
 -- | This test originates both the FA1.2 and FA2 versions of stablecoin,
 -- and performs a single @transfer@ operation.
@@ -49,6 +49,7 @@ fa1_2ComparisonScenario = uncapsNettest $ do
         , rPendingOwner = Nothing
         }
 
+  cmrFA1_2Address <- nettestOriginateContractMetadataContract (SFA2.metadataJSON Nothing)
   let fa1_2Storage = SFA1_2.Storage
         { sDefaultExpiry = 1000
         , sLedger = BigMap balances
@@ -60,7 +61,7 @@ fa1_2ComparisonScenario = uncapsNettest $ do
         , sTransferlistContract = Nothing
         , sTotalSupply = sum balances
         , sSpenderAllowances = mempty
-        , sMetadata = SFA1_2.metadataMap
+        , sMetadata = metadataMap @(()) (RemoteContract cmrFA1_2Address)
         }
 
   fa1_2ContractAddr <- TAddress @SFA1_2.Parameter <$>
@@ -69,7 +70,7 @@ fa1_2ComparisonScenario = uncapsNettest $ do
   comment "Calling transfer"
   callFrom (AddressResolved owner1) fa1_2ContractAddr (Call @"Transfer") (#from .! owner1, #to .! owner2, #value .! 2)
 
-  mrAddress <- nettestOriginateMetadataRegistry
+  cmrAddress <- nettestOriginateContractMetadataContract (SFA2.metadataJSON Nothing)
   let fa2Storage = SFA2.Storage
         { sDefaultExpiry = 1000
         , sLedger = BigMap balances
@@ -80,8 +81,8 @@ fa1_2ComparisonScenario = uncapsNettest $ do
         , sRoles = roles
         , sTransferlistContract = Nothing
         , sOperators = mempty
-        , sTokenMetadataRegistry = mrAddress
-        , sMetadata = SFA2.metadataMap
+        , sMetadata = SFA2.metadataMap @(()) (RemoteContract cmrAddress)
+        , sTotalSupply = 0
         }
 
   comment "Originating Stablecoin FA2 contract"
@@ -89,10 +90,13 @@ fa1_2ComparisonScenario = uncapsNettest $ do
     originateUntypedSimple "Stablecoin FA2" (untypeValue $ toVal fa2Storage) (convertContract stablecoinContract)
 
   comment "Calling transfer"
-  callFrom (AddressResolved owner1) fa2ContractAddr (Call @"Transfer") [FA2.TransferParam
-    { tpFrom = owner1
-    , tpTxs =
-        [ TransferDestination { tdTo = owner2, tdTokenId = 0, tdAmount = 2 }
-
+  callFrom (AddressResolved owner1) fa2ContractAddr (Call @"Transfer") [FA2.TransferItem
+    { tiFrom = owner1
+    , tiTxs =
+        [ TransferDestination
+          { tdTo = owner2
+          , tdTokenId = FA2.theTokenId
+          , tdAmount = 2
+          }
         ]
     }]

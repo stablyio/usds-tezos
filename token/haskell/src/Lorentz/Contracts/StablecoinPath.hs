@@ -6,9 +6,9 @@
 -- Due to GHC stage restriction, they have to be in their own module in order
 -- to be used inside TemplateHaskell splices.
 module Lorentz.Contracts.StablecoinPath
-  ( stablecoinPath
+  ( metadataRegistryContractPath
   , stablecoinFA1_2Path
-  , metadataRegistryContractPath
+  , stablecoinPath
   ) where
 
 -- | The path to the compiled stablecoin contract.
