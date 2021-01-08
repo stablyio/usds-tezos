@@ -18,4 +18,5 @@ export interface TokenStorage {
   };
   token_metadata_registry: string;
   transferlist_contract: any;
+  total_supply: BigNumber;
 }

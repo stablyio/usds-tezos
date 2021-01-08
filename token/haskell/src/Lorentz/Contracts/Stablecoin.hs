@@ -507,14 +507,15 @@ data MetadataUri metadata
 -- FA1.2 Variant as well.
 metadataJSON :: Maybe FA2.TokenMetadata -> Metadata (ToT Storage)
 metadataJSON mtmd  =
-  TZ.name  "stablecoin" <>
+  TZ.name  "Stably USD" <>
   TZ.version (toText $ showVersion version) <>
   TZ.license (License { lName = "MIT", lDetails = Nothing }) <>
   TZ.authors
       [ TZ.author "Serokell" "https://serokell.io/"
       , TZ.author "TQ Tezos" "https://tqtezos.com/"
+      , TZ.author "Stably" "https://stably.io/"
       ] <>
-  TZ.homepage "https://github.com/tqtezos/stablecoin/" <>
+  TZ.homepage "https://stably.io/" <>
   TZ.source Source
      { sLocation = Just $ "https://github.com/tqtezos/stablecoin/tree/v" <> toText (showVersion version) <> "/ligo/stablecoin"
      , sTools = [ "ligo " ] -- TODO: add ligo version

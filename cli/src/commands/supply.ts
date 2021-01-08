@@ -1,3 +1,4 @@
+import config from "../config";
 import { ReadCommand } from "../readCommand";
 import { supply } from "../tezos";
 
@@ -8,6 +9,11 @@ export default class Supply extends ReadCommand {
 
   async run() {
     await super.run();
-    await supply(this.provider, this.tokenContract);
+    const rawTokenSupply = await supply(this.tokenStorage);
+    const decimalTokenSupply = this.intToDecimalRepresentation(
+      rawTokenSupply,
+      config.token.decimals
+    );
+    this.log(`${config.token.symbol} Total Supply: ${decimalTokenSupply}`);
   }
 }

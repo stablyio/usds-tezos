@@ -7,7 +7,7 @@ const config = {
   },
   token: {
     address: {
-      delphinet: "KT1Pt5copNg7wGkKnUa1TFL9c4fvC1xD3LQ4",
+      delphinet: "KT1UX2mx7Y9TTPnx4bGBNUkLakEZaMeZiZkz",
       mainnet: "",
     },
     decimals: 6,
