@@ -88,7 +88,6 @@ data DeployContractOptions = DeployContractOptions
   , dcoTokenSymbol :: Text
   , dcoTokenName :: Text
   , dcoTokenDecimals :: Natural
-  , dcoTokenMetadataRegistry :: Maybe AddressOrAlias
   , dcoReplaceAlias :: Bool
   , dcoDefaultExpiry :: Expiry
   , dcoContractMetadata :: ContractMetadataOptions
@@ -168,9 +167,13 @@ data GetMintingAllowanceOptions = GetMintingAllowanceOptions
 
 data ContractMetadataOptions
   = OpCurrentContract -- ^ Indicate that we should store metadata in the main contract itself.
-  | OpRemoteContract -- ^ Indicate we should originate a dedicated contract to store metadata.
-  | OpRaw Text -- ^ Indicate we should use the URI provided by the user as such.
-  deriving stock Show
+      (Maybe Text)    -- ^ An optional contract description to add to the contract's metadata.
+                      -- If none is given, a default description will be used.
+  | OpRemoteContract  -- ^ Indicate we should originate a dedicated contract to store metadata.
+      (Maybe Text)    -- ^ An optional contract description to add to the contract's metadata.
+                      -- If none is given, a default description will be used.
+  | OpRaw Text        -- ^ Indicate we should use the URI provided by the user as such.
+  deriving stock (Show, Eq)
 
 clientArgsParser :: Opt.Parser ClientArgs
 clientArgsParser =
@@ -224,7 +227,7 @@ clientArgsRawParser = Opt.subparser $
       mkCommandParser
         "deploy"
         (CmdDeployContract <$> deployContractOptions)
-        "Deploy Stablecoin contract to the chain. An alias 'stablecoin' and\
+        "Deploy Stablecoin contract to the chain. An alias 'stablecoin' and \
         \'stablecoin-tzip16-metadata' will be created by default."
 
     deployContractOptions :: Opt.Parser DeployContractOptions
@@ -265,11 +268,6 @@ clientArgsRawParser = Opt.subparser $
           (#name .! "token-decimals")
           (#help .! ("Number of digits to use after the decimal point " <>
                      "when displaying the token amounts"))
-      dcoTokenMetadataRegistry <-
-        optional $ addressOrAliasOption
-          Nothing
-          (#name .! "token-metadata-registry")
-          (#help .! "Address or alias of the metadata registry contract")
       dcoReplaceAlias <-
         Opt.switch $
           Opt.long "replace-alias" <>
@@ -286,12 +284,12 @@ clientArgsRawParser = Opt.subparser $
 
       -- Where to place metadata, while keeping it embedded in
       -- contract being the default
-      dcoContractMetadata <- fromMaybe OpRemoteContract <$> contractMetadataOptParser
+      dcoContractMetadata <- fromMaybe (OpRemoteContract Nothing) <$> contractMetadataOptParser
       pure $ DeployContractOptions {..}
 
     contractMetadataOptParser :: Opt.Parser (Maybe ContractMetadataOptions)
     contractMetadataOptParser =
-        optional (rawOptParser <|> inplaceOptParser)
+        optional (rawOptParser <|> remoteContractOptParser <|> inplaceOptParser)
       where
         rawOptParser :: Opt.Parser ContractMetadataOptions
         rawOptParser = OpRaw <$> (mkCLOptionParser
@@ -300,11 +298,27 @@ clientArgsRawParser = Opt.subparser $
           (#help .! "Use the provided off-chain URI for metadata URI"))
 
         inplaceOptParser :: Opt.Parser ContractMetadataOptions
-        inplaceOptParser =
-          Opt.flag' OpCurrentContract
-            (Opt.long "contract-metadata-in-place"
-            <> Opt.help
-              "Embed the metadata for the contract in the contract's storage itself.")
+        inplaceOptParser = do
+          _ <-
+            Opt.flag' ()
+              (Opt.long "contract-metadata-in-place"
+              <> Opt.help
+                "Embed the metadata for the contract in the contract's storage itself.")
+          desc <- contractDescriptionParser
+          pure $ OpCurrentContract desc
+
+        remoteContractOptParser :: Opt.Parser ContractMetadataOptions
+        remoteContractOptParser = OpRemoteContract <$> contractDescriptionParser
+
+        contractDescriptionParser :: Opt.Parser (Maybe Text)
+        contractDescriptionParser =
+          optional $ mkCLOptionParser @Text
+            Nothing
+            (#name .! "description")
+            (#help .! "An optional contract description to add to the contract's metadata. \
+                      \If none is specified, a generic default description will be used. \
+                      \When the '--contract-metadata-in-place' option is used, the \
+                      \'--description' option must come after it.")
 
     transferCmd :: Opt.Mod Opt.CommandFields ClientArgsRaw
     transferCmd =
