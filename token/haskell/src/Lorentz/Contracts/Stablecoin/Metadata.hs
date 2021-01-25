@@ -109,17 +109,18 @@ metadataJSON :: Maybe FA2.TokenMetadata -> Maybe Text -> Either ViewCodeError (M
 metadataJSON mtmd mbDescription = do
   views <- mkViews
   pure $
-    TZ.name  "stablecoin" <>
+    TZ.name  "Stably USD" <>
     TZ.description (fromMaybe defaultDescription mbDescription) <>
     TZ.version (toText $ showVersion version) <>
     TZ.license (License { lName = "MIT", lDetails = Nothing }) <>
     TZ.authors
-        [ TZ.author "Serokell" "https://serokell.io/"
+        [ TZ.author "Stably" "https://stably.io/"
+        , TZ.author "Serokell" "https://serokell.io/"
         , TZ.author "TQ Tezos" "https://tqtezos.com/"
         ] <>
-    TZ.homepage "https://github.com/tqtezos/stablecoin/" <>
+    TZ.homepage "https://stably.io/" <>
     TZ.source Source
-      { sLocation = Just $ "https://github.com/tqtezos/stablecoin/tree/v" <> toText (showVersion version) <> "/ligo/stablecoin"
+      { sLocation = Just $ "https://github.com/stablyio"
       , sTools = [ "ligo " <> $ligoVersion ]
       } <>
     TZ.interfaces [ TZ.Interface "TZIP-012", TZ.Interface "TZIP-017" ] <>
@@ -154,9 +155,7 @@ metadataJSON mtmd mbDescription = do
   where
     defaultDescription :: Text
     defaultDescription =
-      "Tezos Stablecoin project implements an FA2-compatible token smart contract.\
-      \ It draws inspiration from popular permissioned asset contracts like CENTRE Fiat Token and other similar contracts.\
-      \ The contract is implemented in the LIGO language."
+      "Stably USD is a regulated and transparent fiat-backed stablecoin with a 1:1 US dollar reserve."
 
     mkViews :: Either ViewCodeError [TZ.View (ToT Storage)]
     mkViews =
