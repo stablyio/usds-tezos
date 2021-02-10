@@ -114,10 +114,7 @@ metadataJSON mtmd mbDescription = do
     TZ.version (toText $ showVersion version) <>
     TZ.license (License { lName = "MIT", lDetails = Nothing }) <>
     TZ.authors
-        [ TZ.author "Stably" "https://stably.io/"
-        , TZ.author "Serokell" "https://serokell.io/"
-        , TZ.author "TQ Tezos" "https://tqtezos.com/"
-        ] <>
+        [ TZ.author "Stably" "https://stably.io/" ] <>
     TZ.homepage "https://stably.io/" <>
     TZ.source Source
       { sLocation = Just $ "https://github.com/stablyio"
@@ -155,7 +152,7 @@ metadataJSON mtmd mbDescription = do
   where
     defaultDescription :: Text
     defaultDescription =
-      "Stably USD is a regulated and transparent fiat-backed stablecoin with a 1:1 US dollar reserve."
+      "USDS is a regulated and transparent fiat-backed stablecoin with a 1:1 US dollar reserve"
 
     mkViews :: Either ViewCodeError [TZ.View (ToT Storage)]
     mkViews =
@@ -208,7 +205,7 @@ getTotalSupplyView :: TZ.View (ToT Storage)
 getTotalSupplyView =
   TZ.View
     { vName = "total_supply"
-    , vDescription = Just "Get the total no of tokens available."
+    , vDescription = Just "Get the total amount of tokens available"
     , vPure = Just True
     , vImplementations = one $
         VIMichelsonStorageView $
@@ -224,7 +221,7 @@ getAllTokensView :: TZ.View (ToT Storage)
 getAllTokensView =
   TZ.View
     { vName = "all_tokens"
-    , vDescription = Just "Get list of token ids supported."
+    , vDescription = Just "Get list of token ids supported"
     , vPure = Just True
     , vImplementations = one $
         VIMichelsonStorageView $

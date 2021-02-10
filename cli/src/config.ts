@@ -1,14 +1,14 @@
 const config = {
   node: {
     endpoint: {
-      delphinet: "https://tezos-dev.cryptonomic-infra.tech:443",
-      mainnet: "TODO",
+      delphinet: "https://testnet-tezos.giganode.io",
+      mainnet: "https://mainnet-tezos.giganode.io",
     },
   },
   token: {
     address: {
       delphinet: "KT1WnjpKriR4yweiFdkTiMofoV9hvz7vMSXJ",
-      mainnet: "",
+      mainnet: "KT1REEb5VxWRjcHm5GzDMwErMmNFftsE5Gpf",
     },
     decimals: 6,
     symbol: "USDS",
@@ -17,7 +17,7 @@ const config = {
   explorer: {
     endpoint: {
       delphinet: "https://better-call.dev/delphinet",
-      mainnet: "TODO",
+      mainnet: "https://better-call.dev/mainnet",
     },
   },
 };
