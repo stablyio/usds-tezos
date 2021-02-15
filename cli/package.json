@@ -12,9 +12,9 @@
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^3",
-    "@taquito/ledger-signer": "^7.0.1-beta.0",
-    "@taquito/signer": "^7.0.1-beta.0",
-    "@taquito/taquito": "^7.0.1-beta.0",
+    "@taquito/ledger-signer": "^8.0.1-beta.1",
+    "@taquito/signer": "^8.0.1-beta.1",
+    "@taquito/taquito": "^8.0.1-beta.1",
     "cli-ux": "^5.5.1",
     "tslib": "^1"
   },
