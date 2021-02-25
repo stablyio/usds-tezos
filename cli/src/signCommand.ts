@@ -1,18 +1,11 @@
 import { flags } from "@oclif/command";
-import {
-  ContractAbstraction,
-  ContractProvider,
-  TezosToolkit,
-} from "@taquito/taquito";
 import { InMemorySigner } from "@taquito/signer";
-import BigNumber from "bignumber.js";
 import cli from "cli-ux";
 import TransportNodeHid from "@ledgerhq/hw-transport-node-hid";
 import { DerivationType, LedgerSigner } from "@taquito/ledger-signer";
 
 import { ReadCommand } from "./readCommand";
-import { YES_VALUES, TEZOS_HDW_PATHS } from "./constants";
-import config from "./config";
+import { TEZOS_HDW_PATHS } from "./constants";
 
 export abstract class SignCommand extends ReadCommand {
   static flags = {

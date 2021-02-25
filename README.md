@@ -1,15 +1,17 @@
 # Tezos USDS
-Contracts and tooling for USDS on Tezos.
+Contracts, tooling, and docs for USDS on Tezos.
 
 ## Structure
 
-`/cli` - Command line tool built using [oclif](https://oclif.io/) for managing on-chain token ops
+`/cli` - Command line tool built using [oclif](https://oclif.io/) for managing basic USDS operations
+
+`/documents` - Related documentation for integrating USDS
 
 `/token` - [Git subtree](https://github.com/git/git/blob/master/contrib/subtree/git-subtree.txt) which contains the [single asset FA2 stablecoin implementation by tqtezos](https://github.com/tqtezos/stablecoin)
 
 ## Contracts
 
-| Network   | Token Address                          |
-| --------- | -------------------------------------- |
-| Delphinet | `KT1UX2mx7Y9TTPnx4bGBNUkLakEZaMeZiZkz` |
-| Mainnet   | `TODO`                                 |
+| Network | Token Address                          |
+| ------- | -------------------------------------- |
+| Mainnet | `KT1REEb5VxWRjcHm5GzDMwErMmNFftsE5Gpf` |
+| Testnet | `KT1UX2mx7Y9TTPnx4bGBNUkLakEZaMeZiZkz` |

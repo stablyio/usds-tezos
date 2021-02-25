@@ -58,12 +58,11 @@
       "@oclif/plugin-help"
     ]
   },
-  "repository": "Git-on-my-level/usds-fa2-cli",
+  "repository": "stablyio/usds-tezos",
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
     "posttest": "eslint . --ext .ts --config .eslintrc",
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
-    "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif-dev readme && git add README.md"
   },
   "types": "lib/index.d.ts"

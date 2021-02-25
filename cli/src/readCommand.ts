@@ -6,7 +6,6 @@ import {
 } from "@taquito/taquito";
 import BigNumber from "bignumber.js";
 
-import { YES_VALUES, TEZOS_HDW_PATHS } from "./constants";
 import { initProvider, initTokenContract } from "./tezos/init";
 import config from "./config";
 import { TokenStorage } from "./tezos/types";
