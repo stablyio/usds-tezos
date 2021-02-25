@@ -15,6 +15,6 @@ Contracts, tooling, and docs for USDS on Tezos.
 | Testnet | `KT1UX2mx7Y9TTPnx4bGBNUkLakEZaMeZiZkz` |
 
 ## Contact
-Interested in integrating USDS? See our [integration guide](../usds-tezos-contracts/documents/technical-integration-guide.md).
+Interested in integrating USDS? See our [integration guide](./documents/technical-integration-guide.md).
 
 Want to work together? [Contact us](https://www.stably.io/contact/).
