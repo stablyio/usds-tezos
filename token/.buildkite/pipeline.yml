@@ -11,108 +11,106 @@ env:
   TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER: "Y"
 
 steps:
- - label: hlint
-   if: &not_scheduled
-     build.source != "schedule"
-   command:
-     nix run -f. pkgs.hlint -c ./scripts/lint.sh
+  - label: hlint
+    if: &not_scheduled build.source != "schedule"
+    command: nix run -f. pkgs.hlint -c ./scripts/lint.sh
 
- - label: reuse lint
-   command: nix run -f. pkgs.reuse -c reuse lint
-   if: *not_scheduled
+  - label: reuse lint
+    command: nix run -f. pkgs.reuse -c reuse lint
+    if: *not_scheduled
 
- - label: check trailing whitespace
-   command: .buildkite/check-trailing-whitespace.sh
-   if: *not_scheduled
+  - label: check trailing whitespace
+    command: .buildkite/check-trailing-whitespace.sh
+    if: *not_scheduled
 
- - label: xrefcheck
-   command: "nix run -f https://github.com/serokell/xrefcheck/archive/b54c38d91bd45e5c402ebf51d68c653faf959c2c.tar.gz -c xrefcheck"
-   if: *not_scheduled
-   soft_fail: true
+  - label: xrefcheck
+    command: "nix run -f https://github.com/serokell/xrefcheck/archive/b54c38d91bd45e5c402ebf51d68c653faf959c2c.tar.gz -c xrefcheck"
+    if: *not_scheduled
+    soft_fail: true
 
- - label: LIGO-contract
-   commands:
-     - nix-build -A tezos-contract -o stablecoin_raw.tz
-     - nix run -f. morley -c morley optimize --contract stablecoin_raw.tz --output stablecoin.tz
-     - nix-build -A tezos-contract-fa1-2 -o stablecoin.fa1.2_raw.tz
-     - nix run -f. morley -c morley optimize --contract stablecoin.fa1.2_raw.tz --output stablecoin.fa1.2.tz
-     - nix-build -A tezos-metadata-contract -o metadata.tz
-   artifact_paths:
-     - stablecoin.tz
-     - stablecoin.fa1.2.tz
-     - metadata.tz
+  - label: LIGO-contract
+    commands:
+      - nix-build -A tezos-contract -o stablecoin_raw.tz
+      - nix run -f. morley -c morley optimize --contract stablecoin_raw.tz --output stablecoin.tz
+      - nix-build -A tezos-contract-fa1-2 -o stablecoin.fa1.2_raw.tz
+      - nix run -f. morley -c morley optimize --contract stablecoin.fa1.2_raw.tz --output stablecoin.fa1.2.tz
+      - nix-build -A tezos-metadata-contract -o metadata.tz
+    artifact_paths:
+      - stablecoin.tz
+      - stablecoin.fa1.2.tz
+      - metadata.tz
 
- # wait for the contract step to complete, so the next steps can download generated contract
- - wait
+  # wait for the contract step to complete, so the next steps can download generated contract
+  - wait
 
- - label: build library
-   if: *not_scheduled
-   commands:
-     - eval "$FETCH_CONTRACT"
-     - nix build -L -f. lib
+  - label: build library
+    if: *not_scheduled
+    commands:
+      - eval "$FETCH_CONTRACT"
+      - nix build -L -f. lib
 
- - label: haddock
-   if: *not_scheduled
-   commands:
-     - eval "$FETCH_CONTRACT"
-     - nix build -L -f. haddock
+  - label: haddock
+    if: *not_scheduled
+    commands:
+      - eval "$FETCH_CONTRACT"
+      - nix build -L -f. haddock
 
- - label: test
-   if: *not_scheduled
-   commands:
-     - eval "$FETCH_CONTRACT"
-     - cd haskell
-     - nix build -L -f .. test
-     - ./result/bin/stablecoin-test
+  - label: test
+    if: *not_scheduled
+    commands:
+      - eval "$FETCH_CONTRACT"
+      - cd haskell
+      - nix build -L -f .. test
+      - ./result/bin/stablecoin-test
 
- - label: nettest-local-chain-007
-   if: *not_scheduled
-   env:
-     NETTEST_NODE_ADDR: "localhost"
-     NETTEST_NODE_PORT: "8735"
-     MONEYBAG: "unencrypted:edsk3GjD83F7oj2LrnRGYQer99Fj69U2QLyjWGiJ4UoBZNQwS38J4v"
-   commands: &run-nettest
-     - eval "$FETCH_CONTRACT"
-     - cd haskell/
-     - nix build -L -f ../ nettest
-     - nix run -f ../ tezos-client stablecoin-client -c ../scripts/ci/run-local-chain-nettest.sh ./result/bin/stablecoin-nettest
-   retry: &retry-nettest
+  - label: nettest-local-chain-007
+    if: *not_scheduled
+    env:
+      NETTEST_NODE_ADDR: "localhost"
+      NETTEST_NODE_PORT: "8735"
+      MONEYBAG: "unencrypted:edsk3GjD83F7oj2LrnRGYQer99Fj69U2QLyjWGiJ4UoBZNQwS38J4v"
+    commands: &run-nettest
+      - eval "$FETCH_CONTRACT"
+      - cd haskell/
+      - nix build -L -f ../ nettest
+      - nix run -f ../ tezos-client stablecoin-client -c ../scripts/ci/run-local-chain-nettest.sh ./result/bin/stablecoin-nettest
+    retry: &retry-nettest
       automatic:
         limit: 1
 
- - label: nettest-scheduled-delphinet
-   if: build.source == "schedule"
-   # use another agent for long scheduled jobs
-   agents:
-    queue: "scheduled"
-   env:
-     NETTEST_NODE_ADDR: "delphi.testnet.tezos.serokell.team"
-     NETTEST_NODE_PORT: "8732"
-     # Note that testnet moneybag can run out of tz. If this happened, someone should transfer it some
-     # more tz, its address: tz1ij8gUYbMRUXa4xX3mNvKguhaWG9GGbURn
-     MONEYBAG: "unencrypted:edsk4EYgVvKVKppJXAyeoqxJrNeyoktNqmcx5op1CFht9P1p8pPxp7"
-   commands: *run-nettest
-   retry: *retry-nettest
-   timeout_in_minutes: 180
+  - label: nettest-scheduled-testnet
+    if: build.source == "schedule"
+    # use another agent for long scheduled jobs
+    agents:
+      queue: "scheduled"
+    env:
+      NETTEST_NODE_ADDR: "delphi.testnet.tezos.serokell.team"
+      NETTEST_NODE_PORT: "8732"
+      # Note that testnet moneybag can run out of tz. If this happened, someone should transfer it some
+      # more tz, its address: tz1ij8gUYbMRUXa4xX3mNvKguhaWG9GGbURn
+      MONEYBAG: "unencrypted:edsk4EYgVvKVKppJXAyeoqxJrNeyoktNqmcx5op1CFht9P1p8pPxp7"
+    commands: *run-nettest
+    retry: *retry-nettest
+    timeout_in_minutes: 180
 
- - label: weeder
-   if: *not_scheduled
-   commands:
-     - eval "$FETCH_CONTRACT"
-     - cd haskell
-     - nix-build .. -A weeder-script
-     # weeder needs .cabal file:
-     - nix run -f.. pkgs.haskellPackages.hpack -c hpack
-     - ./result
+  - label: weeder
+    if: *not_scheduled
+    commands:
+      - eval "$FETCH_CONTRACT"
+      - cd haskell
+      - nix-build .. -A weeder-script
+      # weeder needs .cabal file:
+      - nix run -f.. pkgs.haskellPackages.hpack -c hpack
+      - ./result
 
- - label: packaging
-   if: *not_scheduled
-   commands:
-     - eval "$FETCH_CONTRACT"
-     - nix-build -A stablecoin-client -o stablecoin-static
-     - nix run -f . pkgs.upx -c upx stablecoin-static/bin/stablecoin-client -o stablecoin-client
-   artifact_paths:
-     - ./stablecoin-client
+  - label: packaging
+    if: *not_scheduled
+    commands:
+      - eval "$FETCH_CONTRACT"
+      - nix-build -A stablecoin-client -o stablecoin-static
+      - nix run -f . pkgs.upx -c upx stablecoin-static/bin/stablecoin-client -o stablecoin-client
+    artifact_paths:
+      - ./stablecoin-client
 
 notify:
   - email: "tezos-alerts@serokell.io"

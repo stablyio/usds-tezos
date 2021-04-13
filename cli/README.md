@@ -40,7 +40,7 @@ USAGE
 
 OPTIONS
   --address=address            (required) The address to query
-  --network=delphinet|mainnet  [default: delphinet] Tezos network to use
+  --network=testnet|mainnet  [default: testnet] Tezos network to use
 ```
 
 _See code: [src/commands/balance.ts](https://github.com/stablyio/usds-tezos/blob/v0.0.0/src/commands/balance.ts)_
@@ -58,7 +58,7 @@ OPTIONS
                                "hardened" path where every section ends with a `'` character as enforced by the Tezos
                                app on Ledger
 
-  --network=delphinet|mainnet  [default: delphinet] Tezos network to use
+  --network=testnet|mainnet  [default: testnet] Tezos network to use
 
   --sigmethod=privkey|ledger   (required) Signature method for signing the transaction
 ```
@@ -94,7 +94,7 @@ OPTIONS
                                "hardened" path where every section ends with a `'` character as enforced by the Tezos
                                app on Ledger
 
-  --network=delphinet|mainnet  [default: delphinet] Tezos network to use
+  --network=testnet|mainnet  [default: testnet] Tezos network to use
 
   --sigmethod=privkey|ledger   (required) Signature method for signing the transaction
 ```
@@ -109,7 +109,7 @@ USAGE
 
 OPTIONS
   --address=address            (required) The address to get minting allowance for
-  --network=delphinet|mainnet  [default: delphinet] Tezos network to use
+  --network=testnet|mainnet  [default: testnet] Tezos network to use
 ```
 
 _See code: [src/commands/mint/allowance/get.ts](https://github.com/stablyio/usds-tezos/blob/v0.0.0/src/commands/mint/allowance/get.ts)_
@@ -128,7 +128,7 @@ OPTIONS
                                "hardened" path where every section ends with a `'` character as enforced by the Tezos
                                app on Ledger
 
-  --network=delphinet|mainnet  [default: delphinet] Tezos network to use
+  --network=testnet|mainnet  [default: testnet] Tezos network to use
 
   --sigmethod=privkey|ledger   (required) Signature method for signing the transaction
 ```
@@ -142,7 +142,7 @@ USAGE
   $ usds-fa2 supply
 
 OPTIONS
-  --network=delphinet|mainnet  [default: delphinet] Tezos network to use
+  --network=testnet|mainnet  [default: testnet] Tezos network to use
 ```
 
 _See code: [src/commands/supply.ts](https://github.com/stablyio/usds-tezos/blob/v0.0.0/src/commands/supply.ts)_
@@ -161,7 +161,7 @@ OPTIONS
                                "hardened" path where every section ends with a `'` character as enforced by the Tezos
                                app on Ledger
 
-  --network=delphinet|mainnet  [default: delphinet] Tezos network to use
+  --network=testnet|mainnet  [default: testnet] Tezos network to use
 
   --sigmethod=privkey|ledger   (required) Signature method for signing the transaction
 ```

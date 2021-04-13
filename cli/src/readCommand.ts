@@ -14,8 +14,8 @@ export abstract class ReadCommand extends Command {
   static flags = {
     network: flags.string({
       description: "Tezos network to use",
-      default: "delphinet",
-      options: ["delphinet", "mainnet"],
+      default: "testnet",
+      options: ["testnet", "mainnet"],
     }),
   };
 
@@ -62,8 +62,8 @@ export abstract class ReadCommand extends Command {
     if (this.network == "mainnet") {
       return `${config.explorer.endpoint.mainnet}/opg/${txHash}`;
     }
-    if (this.network == "delphinet") {
-      return `${config.explorer.endpoint.delphinet}/opg/${txHash}`;
+    if (this.network == "testnet") {
+      return `${config.explorer.endpoint.testnet}/opg/${txHash}`;
     }
     return "URL not available";
   }

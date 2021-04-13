@@ -7,8 +7,8 @@ import {
 import config from "../config";
 
 export const initProvider = async (network: string): Promise<TezosToolkit> => {
-  if (network == "delphinet") {
-    return new TezosToolkit(config.node.endpoint.delphinet);
+  if (network == "testnet") {
+    return new TezosToolkit(config.node.endpoint.testnet);
   }
   if (network == "mainnet") {
     return new TezosToolkit(config.node.endpoint.mainnet);
@@ -22,8 +22,8 @@ export const initTokenContract = async (
   network: string,
   provider: TezosToolkit
 ): Promise<ContractAbstraction<ContractProvider>> => {
-  if (network == "delphinet") {
-    return provider.contract.at(config.token.address.delphinet);
+  if (network == "testnet") {
+    return provider.contract.at(config.token.address.testnet);
   }
   if (network == "mainnet") {
     return provider.contract.at(config.token.address.mainnet);
