@@ -15,3 +15,5 @@ token: tezos-client
 
 cli:
 	$(MAKE_CLI) all
+
+all: tezos-client token all
